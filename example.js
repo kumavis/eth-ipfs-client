@@ -16,8 +16,13 @@ const ipfs = new IpfsClient({
 })
 ipfs.on('ready', start)
 
-const { engine, provider, blockTracker, cht } = createEthIpfsClient({ ipfs })
+const ethIpfsClient = createEthIpfsClient({ ipfs })
+const { engine, provider, blockTracker, cht, reqTracker } = ethIpfsClient
 const eth = new EthQuery(provider)
+
+global.ethIpfsClient = ethIpfsClient
+global.eth = eth
+global.ipfs = ipfs
 
 // start()
 
