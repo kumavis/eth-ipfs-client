@@ -1,3 +1,4 @@
+const createEthBaseClient = require('eth-rpc-client/createEthBaseClient')
 const JsonRpcEngine = require('json-rpc-engine')
 const asMiddleware = require('json-rpc-engine/src/asMiddleware')
 const createFetchMiddleware = require('eth-json-rpc-middleware/fetch')
@@ -17,49 +18,35 @@ function createEthIpfsClient(_opts) {
     rpcUrl: 'https://mainnet.infura.io',
   }, _opts)
 
-  // setup infura data source
+  // setup data source
   const { rpcUrl } = opts
   const internalEngine = new JsonRpcEngine()
-  const infuraMiddleware = createFetchMiddleware({ rpcUrl })
-  internalEngine.push(infuraMiddleware)
+  const fetchMiddleware = createFetchMiddleware({ rpcUrl })
+  internalEngine.push(fetchMiddleware)
 
-  // setup blockTracker and CHT
-  const { ipfs } = opts
+  // setup blockTracker
   const internalProvider = providerFromEngine(internalEngine)
   const blockTracker = new BlockTracker({ provider: internalProvider })
   blockTracker.start()
+
+  // setup network middleware
   const cht = new EthJsonRpcCht({ blockTracker, provider: internalProvider })
-  const ipfsMiddleware = createIpfsMiddleware({ ipfs, cht })
+  const { ipfs } = opts
+  const networkMiddlware = createIpfsMiddleware({ ipfs, cht })
 
-  // stats
-  const statsMiddleware = createStatsMiddleware()
-  const reqTracker = createReqTracker()
-
-  // setup external rpc engine stack
-  const engine = new JsonRpcEngine()
-  const provider = providerFromEngine(engine)
-  // client handled
-  engine.push(statsMiddleware)
-  // engine.push(staticMiddleware)
-  // engine.push(inflightCacheMiddleware)
-  // engine.push(blockCacheMiddleware)
-  // engine.push(filterMiddleware)
-  // engine.push(idMgmtMiddleware)
-  engine.push(createVmMiddleware({ provider }))
-  // network handled
-  engine.push(ipfsMiddleware)
-  engine.push(reqTracker.middleware)
-  engine.push(asMiddleware(internalEngine))
+  const { engine, provider } = createEthBaseClient(Object.assign({
+    blockTracker,
+    networkMiddlware,
+    createPolyfillMiddleware,
+  }, opts))
 
   return { engine, provider, blockTracker, cht, reqTracker }
 }
 
-function createReqTracker() {
-  const requests = []
-  const middleware = (req, res, next, end) => {
-    const context = { req, res }
-    requests.push(context)
-    next()
-  }
-  return { requests, middleware }
+function createPolyfillMiddleware({ opts, provider, blockTracker }) {
+  const internalEngine = new JsonRpcEngine()
+  internalEngine.push(createScaffoldMiddleware(opts.scaffold))
+  internalEngine.push(createVmMiddleware({ provider }))
+  internalEngine.push(createFilterMiddleware({ blockTracker, provider }))
+  return asMiddleware(internalEngine)
 }
