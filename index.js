@@ -31,10 +31,16 @@ function createEthIpfsClient(_opts) {
   const blockTracker = new BlockTracker({ provider: internalProvider })
   blockTracker.start()
 
-  // setup network middleware
+  // setup cht and ipfs
   const cht = new EthJsonRpcCht({ blockTracker, provider: internalProvider })
   const { ipfs } = opts
-  const networkMiddleware = createIpfsMiddleware({ ipfs, cht })
+  const ipfsMiddleware = createIpfsMiddleware({ ipfs, cht })
+
+  // setup network middleware
+  const networkEngine = new JsonRpcEngine()
+  networkEngine.push(ipfsMiddleware)
+  networkEngine.push(asMiddleware(internalEngine))
+  const networkMiddleware = asMiddleware(networkEngine)
 
   const { engine, provider } = createEthBaseClient(Object.assign({
     blockTracker,
