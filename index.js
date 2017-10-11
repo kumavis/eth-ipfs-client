@@ -32,11 +32,11 @@ function createEthIpfsClient(_opts) {
   // setup network middleware
   const cht = new EthJsonRpcCht({ blockTracker, provider: internalProvider })
   const { ipfs } = opts
-  const networkMiddlware = createIpfsMiddleware({ ipfs, cht })
+  const networkMiddleware = createIpfsMiddleware({ ipfs, cht })
 
   const { engine, provider } = createEthBaseClient(Object.assign({
     blockTracker,
-    networkMiddlware,
+    networkMiddleware,
     createPolyfillMiddleware,
   }, opts))
 
