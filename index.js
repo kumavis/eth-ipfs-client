@@ -3,6 +3,7 @@ const JsonRpcEngine = require('json-rpc-engine')
 const asMiddleware = require('json-rpc-engine/src/asMiddleware')
 const createFetchMiddleware = require('eth-json-rpc-middleware/fetch')
 const createScaffoldMiddleware = require('eth-json-rpc-middleware/scaffold')
+const createFilterMiddleware = require('eth-json-rpc-filters')
 const createStatsMiddleware = require('eth-json-rpc-middleware/stats')
 const createVmMiddleware = require('eth-json-rpc-middleware/vm')
 const providerFromEngine = require('eth-json-rpc-middleware/providerFromEngine')
@@ -41,7 +42,7 @@ function createEthIpfsClient(_opts) {
     createPolyfillMiddleware,
   }, opts))
 
-  return { engine, provider, blockTracker, cht, reqTracker }
+  return { engine, provider, blockTracker, cht }
 }
 
 function createPolyfillMiddleware({ opts, provider, blockTracker }) {
